@@ -1,0 +1,262 @@
+project:
+  name: "Wren Learn"
+  version: "1.0.0"
+  description: "Gamified document learning platform inspired by Duolingo"
+  type: "React Web Application"
+  framework: "React 18 + Vite + TailwindCSS"
+
+tech_stack:
+  frontend:
+    - "React 18.2.0"
+    - "React Router DOM 6.8.0"
+    - "TailwindCSS 3.3.0"
+    - "Framer Motion 10.16.4"
+  state_management:
+    - "React Context API"
+  file_processing:
+    - "pdfjs-dist 3.11.174"
+    - "mammoth 1.6.0"
+  ui:
+    - "Lucide React 0.263.1"
+    - "react-hot-toast 2.4.1"
+    - "react-dropzone 14.2.3"
+    - "react-confetti 6.1.0"
+  storage:
+    - "localForage 1.10.0"
+    - "localStorage fallback"
+  backend_optional:
+    - "Supabase 2.39.0"
+
+features:
+  implemented:
+    authentication:
+      - "Local email/password auth"
+      - "Guest mode with auto-creation"
+      - "User persistence"
+      - "Private route protection"
+      - "Registration & login validation"
+    
+    document_processing:
+      - "Drag-and-drop file upload"
+      - "PDF text extraction"
+      - "DOCX text extraction"
+      - "Plain text support"
+      - "Content sanitization"
+      - "50k character limit"
+      - "Document metadata storage"
+    
+    lesson_generation:
+      - "Vocabulary lessons (12 key terms)"
+      - "Cloze exercises (8 fill-in-blanks)"
+      - "Comprehension questions (4 MCQs)"
+      - "Summary lessons"
+      - "Keyword frequency analysis"
+      - "Difficulty levels (easy/medium/hard)"
+      - "XP rewards (40-120 XP per lesson)"
+    
+    learning_modes:
+      - "Gamified interactive exercises"
+      - "Audiobook mode with TTS"
+      - "Voice selection"
+      - "Adjustable speech rate/pitch"
+      - "Paragraph navigation"
+      - "Playback controls"
+    
+    gamification:
+      - "XP system (100 XP per level)"
+      - "Daily streak tracking"
+      - "6 achievement types"
+      - "Level progression"
+      - "Visual progress indicators"
+    
+    user_interface:
+      - "Duolingo-inspired design"
+      - "Responsive layout"
+      - "Custom animations (float/bounce/wiggle)"
+      - "Kiwi color scheme"
+      - "Toast notifications"
+      - "Custom component library"
+    
+    data_management:
+      - "IndexedDB storage"
+      - "localStorage fallback"
+      - "User data isolation"
+      - "Settings persistence"
+      - "Offline functionality"
+
+  unimplemented:
+    backend_integration:
+      - "Supabase activation"
+      - "Cross-device sync"
+      - "Cloud document storage"
+      - "Real-time collaboration"
+      - "API endpoints"
+    
+    advanced_lessons:
+      - "Flashcard system"
+      - "Spaced repetition"
+      - "Matching exercises"
+      - "True/false questions"
+      - "Essay questions"
+      - "Interactive diagrams"
+      - "Video content"
+    
+    enhanced_tts:
+      - "Speech recognition"
+      - "Voice recording"
+      - "Multiple languages"
+      - "Audio downloads"
+      - "Pronunciation practice"
+    
+    social_features:
+      - "Leaderboards"
+      - "Friend system"
+      - "Study groups"
+      - "Progress sharing"
+      - "Community challenges"
+    
+    analytics:
+      - "Learning analytics"
+      - "Performance metrics"
+      - "Weakness identification"
+      - "Study time tracking"
+      - "Progress reports"
+      - "Learning recommendations"
+    
+    content_management:
+      - "Document folders/tags"
+      - "Advanced search"
+      - "Version control"
+      - "Batch processing"
+      - "OCR support"
+      - "Web page import"
+    
+    accessibility:
+      - "Screen reader optimization"
+      - "Keyboard navigation"
+      - "High contrast mode"
+      - "Font size controls"
+      - "Color blind themes"
+      - "Multi-language support"
+    
+    performance:
+      - "Code splitting"
+      - "Service worker"
+      - "Document caching"
+      - "Lazy loading"
+      - "Memory optimization"
+    
+    security:
+      - "Password hashing"
+      - "Session management"
+      - "Content sanitization"
+      - "Rate limiting"
+      - "Data encryption"
+    
+    monetization:
+      - "Premium subscriptions"
+      - "Feature gating"
+      - "Storage limits"
+      - "Offline premium mode"
+      - "Ad integration"
+
+architecture:
+  structure:
+    - "src/components/ - Reusable UI components"
+    - "src/contexts/ - React Context providers"
+    - "src/lib/ - Utility libraries"
+    - "src/pages/ - Route components"
+  
+  contexts:
+    - "AuthContext: Authentication & user management"
+    - "UserContext: XP, achievements, preferences"
+    - "DocumentContext: Document & lesson management"
+  
+  key_files:
+    - "App.jsx: Main app with routing"
+    - "main.jsx: App entry point"
+    - "parser.js: File processing logic"
+    - "storage.js: Data persistence layer"
+    - "supabase.js: Backend integration (optional)"
+
+configuration:
+  environment_variables:
+    - "VITE_SUPABASE_URL: Supabase project URL"
+    - "VITE_SUPABASE_ANON_KEY: Supabase anonymous key"
+  
+  build:
+    - "Vite build tool"
+    - "Development server on port 3000"
+    - "Auto-open browser"
+    - "Vercel deployment ready"
+
+technical_debt:
+  code_quality:
+    - "Add error boundaries"
+    - "Implement unit tests"
+    - "Add E2E testing"
+    - "Improve code documentation"
+    - "Consider TypeScript migration"
+  
+  performance:
+    - "Optimize bundle size"
+    - "Implement image optimization"
+    - "Add caching strategies"
+    - "Optimize database queries"
+  
+  ux_improvements:
+    - "Enhance loading states"
+    - "Add offline indicators"
+    - "Improve error messages"
+    - "Create onboarding flow"
+    - "Build help system"
+
+roadmap:
+  phase_1:
+    - "Supabase backend integration"
+    - "Flashcard system"
+    - "Enhanced TTS features"
+    - "Basic analytics"
+  
+  phase_2:
+    - "User profiles enhancement"
+    - "Leaderboards"
+    - "Friend system"
+    - "Sharing capabilities"
+  
+  phase_3:
+    - "Spaced repetition algorithm"
+    - "Personalized learning paths"
+    - "Advanced lesson types"
+    - "AI-powered content generation"
+  
+  phase_4:
+    - "Mobile app development"
+    - "Premium features"
+    - "Enterprise features"
+    - "Third-party API integration"
+
+design_decisions:
+  local_first:
+    - "Offline functionality priority"
+    - "Fast response times"
+    - "Privacy-focused approach"
+    - "Easy deployment"
+  
+  gamification_focus:
+    - "Duolingo-inspired engagement"
+    - "Visual progress tracking"
+    - "Achievement motivation"
+    - "Habit formation"
+  
+  document_centric:
+    - "Transform existing content"
+    - "Support common formats"
+    - "Automated generation"
+    - "Progressive difficulty"
+  
+  accessibility:
+    - "Multiple learning modes"
+    - "Responsive design"
+    - "Clear hierarchy"
+    - "Keyboard support"
