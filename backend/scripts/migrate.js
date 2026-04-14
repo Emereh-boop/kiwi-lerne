@@ -15,27 +15,12 @@ async function migrate() {
     
     const schemaPath = path.join(__dirname, '../database/schema.sql');
     const schema = await fs.readFile(schemaPath, 'utf-8');
-    
-    // Split by semicolons and execute each statement
-    const statements = schema
-      .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
 
-    for (const statement of statements) {
-      try {
-        await pool.query(statement);
-      } catch (error) {
-        // Ignore "already exists" errors
-        if (!error.message.includes('already exists') && 
-            !error.message.includes('duplicate key')) {
-          console.error('Migration error:', error.message);
-          throw error;
-        }
-      }
-    }
+    // Execute the schema in one batch to preserve function/triggers blocks
+    await pool.query(schema);
 
     console.log('✅ Database migrations completed successfully');
+    await pool.end();
     process.exit(0);
   } catch (error) {
     console.error('❌ Migration failed:', error);

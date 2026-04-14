@@ -133,9 +133,12 @@ export const documentsAPI = {
     return data.document;
   },
 
-  upload: async (file) => {
+  upload: async (file, content = '') => {
     const formData = new FormData();
     formData.append('file', file);
+    if (content) {
+      formData.append('content', content);
+    }
 
     const token = getToken();
     const response = await fetch(`${API_BASE_URL}/documents`, {

@@ -12,13 +12,13 @@ This guide will help you set up the custom Node.js backend for Kiwi Learn.
 
 1. **Create PostgreSQL database:**
 ```sql
-CREATE DATABASE kiwi_learn;
+CREATE DATABASE kiwi_lerne;
 ```
 
 2. **Note your database connection details:**
    - Host: `localhost` (or your PostgreSQL host)
    - Port: `5432` (default)
-   - Database: `kiwi_learn`
+   - Database: `kiwi_lerne`
    - Username: Your PostgreSQL username
    - Password: Your PostgreSQL password
 
@@ -46,7 +46,7 @@ npm install
    NODE_ENV=development
    
    # Update with your PostgreSQL credentials
-   DATABASE_URL=postgresql://username:password@localhost:5432/kiwi_learn
+   DATABASE_URL=postgresql://username:password@localhost:5432/kiwi_learne
    
    # Generate a strong secret key (use: openssl rand -base64 32)
    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production

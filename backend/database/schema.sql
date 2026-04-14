@@ -47,11 +47,14 @@ CREATE TABLE IF NOT EXISTS documents (
     size_bytes BIGINT,
     file_path VARCHAR(500),
     content_excerpt TEXT,
+    full_text TEXT,
     processed BOOLEAN DEFAULT FALSE,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS full_text TEXT;
 
 -- Lessons
 CREATE TABLE IF NOT EXISTS lessons (

@@ -87,8 +87,9 @@ const UploadPage = () => {
       
       setUploadedFiles(prev => [...newFiles, ...prev])
       
-      // Award XP for uploading files
-      addXP(acceptedFiles.length * 10)
+      // Award XP only for successfully uploaded files
+      const successfulUploads = newFiles.filter(file => file.status === 'success')
+      addXP(successfulUploads.length * 10)
       
     } catch (error) {
       toast.error('Upload failed')
@@ -117,13 +118,11 @@ const UploadPage = () => {
       const successfulUploads = uploadedFiles.filter(f => f.status === 'success')
       
       for (const file of successfulUploads) {
-        // Find the document to get its content
-        const document = documents.find(d => d.id === file.id)
-        if (document && document.content) {
-          await generateLessons(file.id, document.content)
+        if (file.content) {
+          await generateLessons(file.id, file.content)
           toast.success(`Lessons generated for ${file.name}`)
         } else {
-          toast.error(`No content found for ${file.name}`)
+          toast.error(`No content available for ${file.name}`)
         }
       }
       

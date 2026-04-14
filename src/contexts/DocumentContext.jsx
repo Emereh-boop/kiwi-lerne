@@ -64,12 +64,12 @@ export const DocumentProvider = ({ children }) => {
         throw new Error('No file or content provided')
       }
 
-      const uploadedDoc = await documentsAPI.upload(fileToUpload)
+      const uploadedDoc = await documentsAPI.upload(fileToUpload, documentData.content)
       
-      // Store content locally for lesson generation (since backend doesn't store full content)
+      // Store content locally for lesson generation and future sync
       const newDocument = {
         ...uploadedDoc,
-        content: documentData.content, // Keep content for client-side lesson generation
+        content: documentData.content,
         uploadedAt: uploadedDoc.uploaded_at || new Date().toISOString()
       }
       
@@ -108,13 +108,22 @@ export const DocumentProvider = ({ children }) => {
   }
 
   const generateLessons = async (documentId, content) => {
-    const document = documents.find(doc => doc.id === documentId)
+    let document = documents.find(doc => doc.id === documentId)
     if (!document && !content) {
       throw new Error('Document not found or content not provided')
     }
 
-    // Use provided content or document content
-    const textContent = content || document.content
+    // Use provided content or saved document content
+    let textContent = content || document?.content
+    if (!textContent && documentId) {
+      const fullDocument = await documentsAPI.getById(documentId)
+      if (fullDocument) {
+        textContent = fullDocument.full_text || fullDocument.content_excerpt
+        document = { ...document, ...fullDocument }
+        setDocuments(prev => prev.map(doc => doc.id === documentId ? { ...doc, ...fullDocument } : doc))
+      }
+    }
+
     if (!textContent) {
       throw new Error('No content available for lesson generation')
     }

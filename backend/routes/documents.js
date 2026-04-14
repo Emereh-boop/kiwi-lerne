@@ -32,7 +32,7 @@ router.get('/', authenticateToken, async (req, res, next) => {
 router.get('/:id', authenticateToken, async (req, res, next) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, mime_type, size_bytes, file_path, content_excerpt, processed, uploaded_at
+      `SELECT id, name, mime_type, file_path, content_excerpt, full_text, processed, uploaded_at
        FROM documents
        WHERE id = $1 AND owner_id = $2`,
       [req.params.id, req.user.id]
@@ -55,23 +55,28 @@ router.post('/', authenticateToken, upload.single('file'), async (req, res, next
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const { name, mimetype, size, filename, path: filePath } = req.file;
-    
+    const { originalname, mimetype, size, path: filePath } = req.file;
+    const fullText = req.body.content || '';
+
     // Read file content excerpt (first 1000 chars for preview)
     let contentExcerpt = '';
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      contentExcerpt = content.substring(0, 1000);
-    } catch (err) {
-      // For binary files, we'll extract text on the frontend
-      contentExcerpt = '';
+    if (fullText) {
+      contentExcerpt = fullText.substring(0, 1000);
+    } else {
+      try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        contentExcerpt = content.substring(0, 1000);
+      } catch (err) {
+        // For binary files, we'll extract text on the frontend or use a fallback
+        contentExcerpt = '';
+      }
     }
 
     const result = await pool.query(
-      `INSERT INTO documents (owner_id, name, mime_type, size_bytes, file_path, content_excerpt, processed)
-       VALUES ($1, $2, $3, $4, $5, $6, FALSE)
+      `INSERT INTO documents (owner_id, name, mime_type, size_bytes, file_path, content_excerpt, full_text, processed)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE)
        RETURNING *`,
-      [req.user.id, name, mimetype, size, filePath, contentExcerpt]
+      [req.user.id, originalname, mimetype, size, filePath, contentExcerpt, fullText]
     );
 
     res.status(201).json({ document: result.rows[0] });
