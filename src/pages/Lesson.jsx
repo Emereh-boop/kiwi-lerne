@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, XCircle, Volume2, Headphones, BookOpen, RotateCcw } from 'lucide-react'
 import { useDocuments } from '../contexts/DocumentContext'
 import { useUser } from '../contexts/UserContext'
+import { lessonsAPI } from '../lib/api'
 import toast from 'react-hot-toast'
 
 const Lesson = () => {
@@ -25,14 +26,40 @@ const Lesson = () => {
   const [currentPara, setCurrentPara] = useState(0)
 
   useEffect(() => {
-    const foundLesson = lessons.find(l => l.id === id)
-    if (foundLesson) {
-      setLesson(foundLesson)
-      if (user.learningStyle === 'audiobook') {
-        setIsAudiobookMode(true)
+    const loadLesson = async () => {
+      const foundLesson = lessons.find(l => l.id === id)
+      if (foundLesson) {
+        setLesson(foundLesson)
+        if (user.learningStyle === 'audiobook') {
+          setIsAudiobookMode(true)
+        }
+        return
       }
-    } else {
-      navigate('/lessons')
+
+      try {
+        const data = await lessonsAPI.getById(id)
+        const payload = data.lesson.payload || {}
+        setLesson({
+          ...data.lesson,
+          ...payload,
+          documentId: data.lesson.documentId || data.lesson.document_id,
+          words: payload.words || data.lesson.words || [],
+          items: payload.items || data.lesson.items || [],
+          questions: payload.questions || data.lesson.questions || [],
+          summary: payload.summary || data.lesson.summary || '',
+          payload
+        })
+        if (user.learningStyle === 'audiobook') {
+          setIsAudiobookMode(true)
+        }
+      } catch (error) {
+        console.error('Failed to load lesson:', error)
+        navigate('/lessons')
+      }
+    }
+
+    if (id) {
+      loadLesson()
     }
   }, [id, lessons, navigate, user.learningStyle])
 
@@ -54,6 +81,17 @@ const Lesson = () => {
       window.speechSynthesis.onvoiceschanged = null
     }
   }, [voiceName])
+
+  if (!lesson) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-kiwi-green mx-auto mb-4"></div>
+          <p className="text-kiwi-gray">Loading lesson...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleAnswerSelect = (answerIndex) => {
     if (showResult) return
@@ -196,7 +234,11 @@ const Lesson = () => {
   }
 
   const handleLessonComplete = () => {
-    const finalScore = Math.round((score / lesson.questions.length) * 100)
+    const totalItems = lesson.questions?.length || lesson.items?.length || lesson.words?.length || 1
+    const finalScore = lesson.questions || lesson.items
+      ? Math.round((score / totalItems) * 100)
+      : 100
+
     updateLessonProgress(lesson.id, finalScore)
     
     if (finalScore >= 80) {
@@ -278,17 +320,6 @@ const Lesson = () => {
     const i = Math.max(0, Math.min(idx, paragraphs.length - 1))
     setCurrentPara(i)
     if (paragraphs[i]) speakText(paragraphs[i])
-  }
-
-  if (!lesson) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-kiwi-green mx-auto mb-4"></div>
-          <p className="text-kiwi-gray">Loading lesson...</p>
-        </div>
-      </div>
-    )
   }
 
   if (isAudiobookMode && lesson.type === 'summary') {
@@ -506,6 +537,87 @@ const Lesson = () => {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (lesson.type === 'summary') {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate('/lessons')}
+            className="flex items-center space-x-2 text-kiwi-gray hover:text-kiwi-green"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back to Lessons</span>
+          </button>
+          <button
+            onClick={toggleAudiobookMode}
+            className="btn-secondary"
+          >
+            {isAudiobookMode ? 'Switch to Reading' : 'Switch to Audiobook Mode'}
+          </button>
+        </div>
+
+        <div className="card">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-kiwi-dark mb-2">{lesson.title}</h1>
+            <p className="text-kiwi-gray">{lesson.description}</p>
+          </div>
+
+          <div className="prose max-w-none">
+            <div className="bg-kiwi-light-gray rounded-xl p-8 text-lg leading-relaxed text-kiwi-dark">
+              {lesson.summary}
+            </div>
+          </div>
+
+          {isAudiobookMode && (
+            <div className="mt-8 space-y-4">
+              <div className="flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={() => speakParagraph(currentPara)}
+                  className="btn-primary flex items-center space-x-2"
+                >
+                  <Headphones className="w-5 h-5" />
+                  <span>{isSpeaking ? 'Restart Paragraph' : 'Play Paragraph'}</span>
+                </button>
+                <button onClick={pauseSpeaking} className="btn-outline">Pause</button>
+                <button onClick={resumeSpeaking} className="btn-outline">Resume</button>
+                <button onClick={stopSpeaking} className="btn-secondary">Stop</button>
+              </div>
+
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => speakParagraph(currentPara - 1)}
+                  className="btn-outline"
+                  disabled={currentPara <= 0}
+                >
+                  Previous
+                </button>
+                <span className="text-sm font-semibold text-kiwi-dark">
+                  Paragraph {currentPara + 1} / {paragraphs.length}
+                </span>
+                <button
+                  onClick={() => speakParagraph(currentPara + 1)}
+                  className="btn-outline"
+                  disabled={currentPara >= paragraphs.length - 1}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="text-center">
+          <button
+            onClick={() => handleLessonComplete()}
+            className="btn-primary"
+          >
+            Mark as Complete
+          </button>
         </div>
       </div>
     )

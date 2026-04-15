@@ -42,10 +42,18 @@ const apiRequest = async (endpoint, options = {}) => {
     throw new Error('Unauthorized');
   }
 
-  const data = await response.json();
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null;
+    }
+  }
 
   if (!response.ok) {
-    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+    throw new Error((data && data.error) || `HTTP error! status: ${response.status}`);
   }
 
   return data;
@@ -194,6 +202,19 @@ export const lessonsAPI = {
     const data = await apiRequest('/lessons', {
       method: 'POST',
       body: JSON.stringify({ documentId, lessons }),
+    });
+    return data.lessons;
+  },
+
+  delete: async (lessonId) => {
+    await apiRequest(`/lessons/${lessonId}`, {
+      method: 'DELETE'
+    });
+  },
+
+  generateForDocument: async (documentId) => {
+    const data = await apiRequest(`/lessons/generate/${documentId}`, {
+      method: 'POST'
     });
     return data.lessons;
   },

@@ -58,16 +58,17 @@ router.post('/', authenticateToken, upload.single('file'), async (req, res, next
     const { originalname, mimetype, size, path: filePath } = req.file;
     const fullText = req.body.content || '';
 
+    const isTextFile = mimetype.startsWith('text/') || /\.(txt|md|csv|json|xml)$/i.test(originalname);
+
     // Read file content excerpt (first 1000 chars for preview)
     let contentExcerpt = '';
     if (fullText) {
       contentExcerpt = fullText.substring(0, 1000);
-    } else {
+    } else if (isTextFile) {
       try {
         const content = await fs.readFile(filePath, 'utf-8');
         contentExcerpt = content.substring(0, 1000);
       } catch (err) {
-        // For binary files, we'll extract text on the frontend or use a fallback
         contentExcerpt = '';
       }
     }

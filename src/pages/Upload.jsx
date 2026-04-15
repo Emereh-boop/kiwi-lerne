@@ -67,12 +67,11 @@ const UploadPage = () => {
       for (const file of acceptedFiles) {
         try {
           const processedFile = await processFile(file)
-          // Pass both the processed data and original file for backend upload
           const document = await addDocument({
             ...processedFile,
-            file: file // Include original file for backend upload
+            file: file
           })
-          newFiles.push({ ...processedFile, id: document.id, status: 'success' })
+          newFiles.push({ name: file.name, id: document.id, status: 'success' })
           
           toast.success(`${file.name} uploaded successfully!`)
         } catch (error) {
@@ -87,7 +86,6 @@ const UploadPage = () => {
       
       setUploadedFiles(prev => [...newFiles, ...prev])
       
-      // Award XP only for successfully uploaded files
       const successfulUploads = newFiles.filter(file => file.status === 'success')
       addXP(successfulUploads.length * 10)
       
@@ -118,12 +116,8 @@ const UploadPage = () => {
       const successfulUploads = uploadedFiles.filter(f => f.status === 'success')
       
       for (const file of successfulUploads) {
-        if (file.content) {
-          await generateLessons(file.id, file.content)
-          toast.success(`Lessons generated for ${file.name}`)
-        } else {
-          toast.error(`No content available for ${file.name}`)
-        }
+        await generateLessons(file.id)
+        toast.success(`Lessons generated for ${file.name}`)
       }
       
       addXP(successfulUploads.length * 25)

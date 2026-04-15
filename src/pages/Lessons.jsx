@@ -3,11 +3,22 @@ import { Link } from 'react-router-dom'
 import { BookOpen, Trophy, Clock, CheckCircle, Lock, Star, Filter } from 'lucide-react'
 import { useDocuments } from '../contexts/DocumentContext'
 import { useUser } from '../contexts/UserContext'
+import toast from 'react-hot-toast'
 
 const Lessons = () => {
-  const { lessons, documents } = useDocuments()
+  const { lessons, documents, deleteLesson } = useDocuments()
   const { user } = useUser()
   const [filter, setFilter] = useState('all')
+
+  const handleDeleteLesson = async (lessonId) => {
+    try {
+      await deleteLesson(lessonId)
+      toast.success('Lesson deleted')
+    } catch (error) {
+      console.error('Failed to delete lesson:', error)
+      toast.error('Unable to delete lesson')
+    }
+  }
 
   const filteredLessons = lessons.filter(lesson => {
     if (filter === 'all') return true
@@ -156,12 +167,12 @@ const Lessons = () => {
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-kiwi-gray">Progress</span>
-                  <span className="font-semibold text-kiwi-dark">{lesson.progress}%</span>
+                  <span className="font-semibold text-kiwi-dark">{lesson.progress || 0}%</span>
                 </div>
                 <div className="progress-bar">
                   <div 
                     className="progress-fill"
-                    style={{ width: `${lesson.progress}%` }}
+                    style={{ width: `${lesson.progress || 0}%` }}
                   ></div>
                 </div>
               </div>
@@ -175,6 +186,12 @@ const Lessons = () => {
                   {lesson.completed ? 'Review' : 'Start Lesson'}
                 </button>
               </Link>
+              <button
+                onClick={() => handleDeleteLesson(lesson.id)}
+                className="w-full mt-3 py-3 rounded-lg border border-kiwi-red text-kiwi-red hover:bg-kiwi-red hover:text-white transition-all"
+              >
+                Delete Lesson
+              </button>
             </div>
           ))}
         </div>

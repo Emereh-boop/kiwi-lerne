@@ -12,7 +12,14 @@ import { UserProvider } from './contexts/UserContext'
 import { DocumentProvider } from './contexts/DocumentContext'
 
 function PrivateRoute({ element }) {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-kiwi-dark">
+        Loading session...
+      </div>
+    )
+  }
   if (!user) {
     return <Navigate to="/auth" replace />
   }

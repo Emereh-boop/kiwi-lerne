@@ -20,6 +20,21 @@ export const DocumentProvider = ({ children }) => {
   const [loading, setLoading] = useState(false)
   const { user: authUser } = useAuth()
 
+  const normalizeLesson = (lesson) => {
+    if (!lesson) return lesson
+    const payload = lesson.payload || {}
+    return {
+      ...lesson,
+      ...payload,
+      documentId: lesson.documentId || lesson.document_id,
+      words: payload.words || lesson.words || [],
+      items: payload.items || lesson.items || [],
+      questions: payload.questions || lesson.questions || [],
+      summary: payload.summary || lesson.summary || '',
+      payload
+    }
+  }
+
   // Load documents and lessons from backend
   useEffect(() => {
     (async () => {
@@ -37,7 +52,7 @@ export const DocumentProvider = ({ children }) => {
         ])
         
         setDocuments(docsData || [])
-        setLessons(lessonsData || [])
+        setLessons((lessonsData || []).map(normalizeLesson))
       } catch (error) {
         console.error('Failed to load documents/lessons:', error)
       } finally {
@@ -107,204 +122,28 @@ export const DocumentProvider = ({ children }) => {
     }
   }
 
-  const generateLessons = async (documentId, content) => {
-    let document = documents.find(doc => doc.id === documentId)
-    if (!document && !content) {
-      throw new Error('Document not found or content not provided')
-    }
-
-    // Use provided content or saved document content
-    let textContent = content || document?.content
-    if (!textContent && documentId) {
-      const fullDocument = await documentsAPI.getById(documentId)
-      if (fullDocument) {
-        textContent = fullDocument.full_text || fullDocument.content_excerpt
-        document = { ...document, ...fullDocument }
-        setDocuments(prev => prev.map(doc => doc.id === documentId ? { ...doc, ...fullDocument } : doc))
-      }
-    }
-
-    if (!textContent) {
-      throw new Error('No content available for lesson generation')
-    }
-
-    // Generate lessons client-side (keep existing logic)
-    const generatedLessons = generateLessonsFromContent(textContent, documentId)
-    
-    // Transform to backend format
-    const lessonsForBackend = generatedLessons.map(lesson => ({
-      type: lesson.type,
-      title: lesson.title,
-      description: lesson.description,
-      difficulty: lesson.difficulty,
-      xp: lesson.xp,
-      payload: {
-        words: lesson.words,
-        items: lesson.items,
-        questions: lesson.questions,
-        summary: lesson.summary
-      }
-    }))
-
+  const generateLessons = async (documentId) => {
     try {
-      // Save lessons to backend
-      const savedLessons = await lessonsAPI.create(documentId, lessonsForBackend)
-      
-      // Update local state
-      setLessons(prev => [...prev, ...savedLessons])
-      
-      // Mark document as processed
+      const savedLessons = await lessonsAPI.generateForDocument(documentId)
+      const normalized = savedLessons.map(normalizeLesson)
+      setLessons(prev => [...prev, ...normalized])
       await updateDocument(documentId, { processed: true })
-      
-      return savedLessons
+      return normalized
     } catch (error) {
-      console.error('Failed to save lessons:', error)
+      console.error('Failed to generate lessons on server:', error)
       throw error
     }
   }
 
-  const generateLessonsFromContent = (content, documentId) => {
-    const cleaned = content.replace(/\s+/g, ' ').trim()
-    const sentences = cleaned.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 20)
-    const words = cleaned.toLowerCase().match(/[a-z0-9]+/g) || []
-    const lessons = []
-
-    const stopwords = new Set(['the','and','to','of','a','in','that','is','it','for','on','as','with','are','be','by','this','an','or','from','at','was','which','but','have','has','not','can','will','its','their','more','one','we','you'])
-    const freq = new Map()
-    for (const w of words) {
-      if (w.length < 4 || stopwords.has(w)) continue
-      freq.set(w, (freq.get(w) || 0) + 1)
+  const deleteLesson = async (lessonId) => {
+    try {
+      await lessonsAPI.delete(lessonId)
+      setLessons(prev => prev.filter(lesson => lesson.id !== lessonId))
+    } catch (error) {
+      console.error('Failed to delete lesson:', error)
+      throw error
     }
-    const keywords = Array.from(freq.entries())
-      .sort((a,b) => b[1]-a[1])
-      .slice(0, 20)
-      .map(([w]) => w)
-
-    // Vocabulary lesson using keywords
-    if (keywords.length > 0) {
-      lessons.push({
-        id: `${documentId}-vocab`,
-        documentId,
-        type: 'vocabulary',
-        title: 'Key Vocabulary',
-        description: 'Learn important terms extracted from your document',
-        difficulty: 'easy',
-        xp: 60,
-        words: keywords.slice(0, 12),
-        completed: false,
-        progress: 0
-      })
-    }
-
-    // Cloze (fill-in-the-blank) lesson
-    const clozeItems = buildClozeItems(sentences, keywords)
-    if (clozeItems.length) {
-      lessons.push({
-        id: `${documentId}-cloze`,
-        documentId,
-        type: 'cloze',
-        title: 'Fill in the Blanks',
-        description: 'Test recall by completing sentences with key terms',
-        difficulty: 'medium',
-        xp: 90,
-        items: clozeItems.slice(0, 8),
-        completed: false,
-        progress: 0
-      })
-    }
-
-    // Comprehension questions
-    if (sentences.length > 0) {
-      lessons.push({
-        id: `${documentId}-comprehension`,
-        documentId,
-        type: 'comprehension',
-        title: 'Reading Comprehension',
-        description: 'Multiple-choice questions generated from key statements',
-        difficulty: 'medium',
-        xp: 120,
-        questions: generateComprehensionQuestions(sentences.slice(0, 8), keywords.slice(0, 6)),
-        completed: false,
-        progress: 0
-      })
-    }
-
-    // Summary lesson
-    const summary = summarizeText(sentences, keywords)
-    lessons.push({
-      id: `${documentId}-summary`,
-      documentId,
-      type: 'summary',
-      title: 'Document Summary',
-      description: 'Review the main points of this document',
-      difficulty: 'easy',
-      xp: 40,
-      summary,
-      completed: false,
-      progress: 0
-    })
-
-    // Fallback: if no lessons were generated (e.g., tiny document), create generic lessons
-    if (lessons.length === 0) {
-      lessons.push({
-        id: `${documentId}-summary`,
-        documentId,
-        type: 'summary',
-        title: 'Document Summary',
-        description: 'Review the main points of this document',
-        difficulty: 'easy',
-        xp: 40,
-        summary: cleaned.substring(0, 800) || 'No content available.',
-        completed: false,
-        progress: 0
-      })
-    }
-
-    return lessons
   }
-
-  const generateComprehensionQuestions = (sentences, keywords) => {
-    const take = Math.min(4, sentences.length)
-    const selected = sentences.slice(0, take)
-    return selected.map((s, idx) => {
-      const focus = (keywords && keywords[idx % Math.max(1, keywords.length)]) || ''
-      const stem = `What best describes this statement: "${s.trim().substring(0, 140)}"?`
-      const options = [
-        'Main idea of the section',
-        'Supporting detail',
-        'Counterpoint or limitation',
-        'Irrelevant information'
-      ]
-      // Heuristic: longer/intro sentences marked as main idea
-      const correct = s.length > 120 || idx === 0 ? 0 : 1
-      return { id: `q-${idx}`, question: stem, options, correct }
-    })
-  }
-
-  const buildClozeItems = (sentences, keywords) => {
-    const items = []
-    for (const s of sentences) {
-      const lower = s.toLowerCase()
-      const match = (keywords || []).find(k => lower.includes(k))
-      if (!match) continue
-      const blanked = s.replace(new RegExp(`\\b${escapeRegExp(match)}\\b`, 'i'), '____')
-      const distractors = (keywords || []).filter(k => k !== match).slice(0,3)
-      const options = shuffleArray([match, ...distractors].slice(0,4))
-      items.push({ sentence: blanked, answer: match, options })
-      if (items.length >= 10) break
-    }
-    return items
-  }
-
-  const summarizeText = (sentences, keywords) => {
-    const top = sentences.slice(0, 3).join(' ')
-    const key = (keywords || []).slice(0,5).join(', ')
-    const base = `${top} \n\nKey terms: ${key}`
-    return base.length > 800 ? base.substring(0, 800) + '…' : base
-  }
-
-  const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const shuffleArray = (arr) => arr.map(v => [Math.random(), v]).sort((a,b)=>a[0]-b[0]).map(([,v])=>v)
 
   const updateLessonProgress = async (lessonId, progress) => {
     // Optimistic update
@@ -360,6 +199,7 @@ export const DocumentProvider = ({ children }) => {
     addDocument,
     updateDocument,
     deleteDocument,
+    deleteLesson,
     generateLessons,
     setCurrentDocument,
     setCurrentLesson,
